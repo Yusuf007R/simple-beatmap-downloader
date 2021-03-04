@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/Yusuf007R/simple-beatmap-downloader#readme",
   "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^8.2.0",
     "nodejs-file-downloader": "^4.2.0",
     "vorpal": "^1.12.0"
   }
