@@ -1,0 +1,23 @@
+{
+  "name": "simple-beatmap-downloader",
+  "version": "1.0.0",
+  "description": "simple osu beatmap downloader",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yusuf007R/simple-beatmap-downloader.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Yusuf007R/simple-beatmap-downloader/issues"
+  },
+  "homepage": "https://github.com/Yusuf007R/simple-beatmap-downloader#readme",
+  "dependencies": {
+    "nodejs-file-downloader": "^4.2.0",
+    "vorpal": "^1.12.0"
+  }
+}
