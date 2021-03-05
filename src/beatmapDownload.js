@@ -1,7 +1,9 @@
 const Downloader = require("nodejs-file-downloader");
-const beatmapDL = async (callback, data) => {
+const { baseURL } = require("./config");
+
+const beatmapDL = async (callback, url) => {
   const downloader = new Downloader({
-    url: `https://beatconnect.io/b/${data.id}/${data.unique_id}/?nocf=1`,
+    url,
     directory: "./downloads",
     onProgress: function (percentage) {
       callback(percentage);
