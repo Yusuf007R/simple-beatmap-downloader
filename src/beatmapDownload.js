@@ -1,12 +1,12 @@
 const Downloader = require("nodejs-file-downloader");
 const { baseURL } = require("./config");
 
-const beatmapDL = async (callback, url) => {
+const beatmapDL = async (callback, url, data) => {
   const downloader = new Downloader({
     url,
     directory: "./downloads",
     onProgress: function (percentage) {
-      callback(percentage);
+      callback(data, percentage);
     },
   });
   try {
