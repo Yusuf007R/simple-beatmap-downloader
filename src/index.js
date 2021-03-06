@@ -1,10 +1,10 @@
 const vorpal = require("vorpal")();
-const { baseURL } = require("./src/config");
+const { baseURL } = require("./config");
 const clipboardy = require("clipboardy");
 const Banchojs = require("bancho.js");
 
-const beatmapDL = require("./src/beatmapDownload");
-const beatmapRequest = require("./src/beatmapRequest");
+const beatmapDL = require("./beatmapDownload");
+const beatmapRequest = require("./beatmapRequest");
 let beatmapInfo;
 
 vorpal.log("welcome to OsuDL");
