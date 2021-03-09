@@ -1,6 +1,6 @@
-const vorpal = require("vorpal")();
+const vorpal = require("./vorpal");
 const { baseURL } = require("./config");
-const clipboardy = require("clipboardy");
+
 const Banchojs = require("bancho.js");
 
 const beatmapDL = require("./beatmapDownload");
@@ -8,12 +8,6 @@ const beatmapRequest = require("./beatmapRequest");
 let beatmapInfo;
 
 vorpal.log("welcome to OsuDL");
-
-const downloadStats = (data, percentage) => {
-  vorpal.ui
-    .redraw(`downloading: ${data.artist} ${data.title} mapped by ${data.creator} 
-              ${percentage}% complete`);
-};
 
 vorpal.localStorage("OsuDL");
 
@@ -26,7 +20,7 @@ if (!vorpal.localStorage.getItem("first")) {
 
 vorpal
   .command("login", "log in to see multi beatmapID")
-  .action(function (args, cb) {
+  .action(function (args, callback) {
     const self = this;
     vorpal.log(
       "lets log in with banchoIRC account, this is only necessary if you want to have automatic multi beatmapID. remember that your IRC password is not the same as your account osu account password, you can find your credentials at https://osu.ppy.sh/p/irc"
@@ -84,7 +78,7 @@ vorpal
     );
   });
 
-vorpal.command("settings", "in app settings").action(function (args, cb) {
+vorpal.command("settings", "in app settings").action(function (args, callback) {
   vorpal.log(`let's do the initial settings`);
   return this.prompt(
     {
@@ -106,29 +100,38 @@ vorpal.command("settings", "in app settings").action(function (args, cb) {
 });
 
 vorpal
-  .command("mpConnect [id]", "connect to multiplayer service")
+  .command("connect [id]", "connect to multiplayer service")
   .alias("mp")
-  .action(function (args, cb) {
+  .action(function (args, callback) {
     const matchConnect = (matchID) => {
       vorpal.log("connecting...");
       const userData = JSON.parse(vorpal.localStorage.getItem("userData"));
       userInfo = userData;
       const client = new Banchojs.BanchoClient(userInfo);
-      client.connect().then(async () => {
-        vorpal.log("connected");
-        const channel = client.getChannel(`#mp_${matchID}`);
-        await channel.join();
-        const lobby = channel.lobby;
-        if (lobby == null) throw new Error("missing api key");
-        lobby.on("beatmap", async (beatmap) => {
-          if (beatmap == null) return;
-          beatmapInfo = beatmap;
-          vorpal.log(
-            `multi beatmap: ${beatmap.artist} ${beatmap.title} mapped by ${beatmap.creator} beatmapID:${beatmap.setId} you can use command "mpdl" to download it`
-          );
+      try {
+        client.connect().then(async () => {
+          const channel = client.getChannel(`#mp_${matchID}`);
+          await channel.join();
+          channel.on("message", (e) => {
+            if (e.user.ircUsername == userData.username) {
+              console.log(e.message);
+            }
+          });
+          const lobby = channel.lobby;
+          vorpal.log("connected");
+          lobby.on("beatmap", async (beatmap) => {
+            if (beatmap == null) return;
+
+            beatmapInfo = beatmap;
+            vorpal.log(
+              `multi beatmap: ${beatmap.artist} ${beatmap.title} mapped by ${beatmap.creator} beatmapID:${beatmap.setId} you can use command "mpdl" to download it`
+            );
+          });
+          callback();
         });
-        cb();
-      });
+      } catch (error) {
+        vorpal.log(error.message);
+      }
     };
     if (args.id) {
       return matchConnect(args.id);
@@ -148,58 +151,34 @@ vorpal
 
 vorpal
   .command("multiplayerDownload", "download the current multiplayer beatmap")
-  .alias("mpdl")
-  .action(function (args, cb) {
+  .action(function (args, callback) {
     if (!beatmapInfo) {
       vorpal.log("not multi beatmap founded");
-      return cb();
+      return callback();
     }
-    this.prompt(
-      {
-        type: "confirm",
-        name: "result",
-        message: `do you wanna download ${beatmapInfo.artist} ${beatmapInfo.title} mapped by ${beatmapInfo.creator} beatmapID:${beatmapInfo.setId}?`,
-      },
-      async function ({ result }) {
-        if (result) {
-          const url = `${baseURL}/b/${beatmapInfo.setId}/`;
-          if (vorpal.localStorage.getItem("inAppDL") == "false") {
-            clipboardy.writeSync(url);
-            vorpal.log("copied to clipboard");
-            cb();
-          } else {
-            await beatmapDL(downloadStats, url, beatmapInfo);
-            vorpal.log("download completed");
-            cb();
-          }
-        }
-        cb();
-      }
-    );
-  });
+    (async () => {
+      await beatmapDL(beatmapInfo.setId, this, callback);
+    })();
+    // await beatmapDL(downloadStats, beatmapInfo.setId, sefl, callback);
+
+    // beatmapRequest(beatmapInfo.setId)
+    //   .then(async (data) => {
+    //     const sefl = this;
+    //     const url = `${baseURL}/b/${data.id}/${data.unique_id}/`;
+    //     await beatmapDL(downloadStats, url, data, sefl, callback);
+    //   })
+    //   .catch((err) => {
+    //     this.log(err);
+    //   });
+  })
+  .alias("mpdl");
 
 vorpal
   .command("download <id>", "download a beatmap")
-  .action(function async(args, callback) {
-    beatmapRequest(args.id)
-      .then(async (data) => {
-        const url = `${baseURL}/b/${data.id}/${data.unique_id}/`;
-
-        if (vorpal.localStorage.getItem("inAppDL") == "false") {
-          clipboardy.writeSync(url);
-          this.log("copied to clipboard");
-          callback();
-        } else {
-          await beatmapDL(downloadStats, url, data);
-          this.log("download completed");
-          callback();
-        }
-      })
-      .catch((err) => {
-        this.log(err);
-      });
-
-    callback();
+  .action(function (args, callback) {
+    (async () => {
+      await beatmapDL(args.id, this, callback);
+    })();
   })
   .alias("dl");
 
