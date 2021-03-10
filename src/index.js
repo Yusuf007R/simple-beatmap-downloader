@@ -1,10 +1,6 @@
 const vorpal = require("./vorpal");
-const { baseURL } = require("./config");
-
 const Banchojs = require("bancho.js");
-
 const beatmapDL = require("./beatmapDownload");
-const beatmapRequest = require("./beatmapRequest");
 let beatmapInfo;
 
 vorpal.log("welcome to OsuDL");
@@ -80,23 +76,60 @@ vorpal
 
 vorpal.command("settings", "in app settings").action(function (args, callback) {
   vorpal.log(`let's do the initial settings`);
-  return this.prompt(
+  const self = this;
+  this.prompt(
     {
       type: "list",
-      name: "download",
+      name: "settings",
       default: "in app",
-      message:
-        "Do you wanna download the beatmaps in the app or copy the link to clipboard to use a external download manager?",
-      choices: ["in app", "copy to clipboard"],
+      message: "Select an option",
+      choices: ["Download management", "Beatmap import method"],
     },
-    function ({ download }) {
-      if (download == "in app") {
-        vorpal.localStorage.setItem("inAppDL", true);
+    function ({ settings }) {
+      if (settings == "Download management") {
+        self.prompt(
+          {
+            type: "list",
+            name: "download",
+            default: "in app",
+            message:
+              "Do you wanna download the beatmaps in the app or copy the link to clipboard to use a external download manager?",
+            choices: ["In app", "Copy to clipboard"],
+          },
+          function ({ download }) {
+            if (download == "In app") {
+              vorpal.localStorage.setItem("inAppDL", true);
+              vorpal.delimiter("OsuDl:").show();
+            } else {
+              vorpal.localStorage.setItem("inAppDL", false);
+              vorpal.delimiter("OsuDl:").show();
+            }
+          }
+        );
       } else {
-        vorpal.localStorage.setItem("inAppDL", false);
+        self.prompt(
+          {
+            type: "list",
+            name: "importSetting",
+            default: "Manually import",
+            message:
+              "Do you wanna auto import beatmaps or manually import them?",
+            choices: ["Auto import", "Manually import"],
+          },
+          function ({ importSetting }) {
+            if (importSetting == "Auto import") {
+              vorpal.localStorage.setItem("AutoImport", true);
+              vorpal.delimiter("OsuDl:").show();
+            } else {
+              vorpal.localStorage.setItem("AutoImport", false);
+              vorpal.delimiter("OsuDl:").show();
+            }
+          }
+        );
       }
     }
   );
+  callback();
 });
 
 vorpal
@@ -159,17 +192,6 @@ vorpal
     (async () => {
       await beatmapDL(beatmapInfo.setId, this, callback);
     })();
-    // await beatmapDL(downloadStats, beatmapInfo.setId, sefl, callback);
-
-    // beatmapRequest(beatmapInfo.setId)
-    //   .then(async (data) => {
-    //     const sefl = this;
-    //     const url = `${baseURL}/b/${data.id}/${data.unique_id}/`;
-    //     await beatmapDL(downloadStats, url, data, sefl, callback);
-    //   })
-    //   .catch((err) => {
-    //     this.log(err);
-    //   });
   })
   .alias("mpdl");
 
